@@ -768,6 +768,7 @@
             });
 
             gameState.peer.on('connection', (conn) => {
+                updateStatus('Incoming connection...', 'connecting');
                 handleConnection(conn);
             });
 
@@ -781,6 +782,12 @@
             conn.on('open', () => {
                 gameState.connections.push(conn);
                 console.log('Connected to:', conn.peer);
+
+                // Start game if not already started (when receiving incoming connection)
+                if (!gameState.gameStarted) {
+                    gameState.isHost = true;
+                    startGame();
+                }
 
                 // Send existing players info to new peer
                 if (gameState.localPlayer) {
