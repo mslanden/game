@@ -2456,14 +2456,15 @@
             ctx.fillStyle = 'rgba(26, 26, 46, 0.8)';
             ctx.fillRect(0, 0, size, size);
 
-            // Draw obstacles
-            ctx.fillStyle = 'rgba(74, 74, 106, 0.8)';
+            // Draw obstacles (trees show as green circles)
+            ctx.fillStyle = 'rgba(34, 139, 34, 0.8)';
             obstacles.forEach(obs => {
                 const x = (obs.position.x + 50) * scale;
                 const z = (obs.position.z + 50) * scale;
-                const w = obs.geometry.parameters.width * scale;
-                const d = obs.geometry.parameters.depth * scale;
-                ctx.fillRect(x - w/2, z - d/2, w, d);
+                // Trees are groups, so draw them as circles
+                ctx.beginPath();
+                ctx.arc(x, z, 3, 0, Math.PI * 2);
+                ctx.fill();
             });
 
             // Draw players
