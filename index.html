@@ -541,6 +541,107 @@
             border-top: 1px solid #3a3a5a;
         }
 
+        /* Character Selection */
+        .character-select {
+            margin: 20px 0;
+        }
+
+        .character-select label {
+            display: block;
+            color: #aaa;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .character-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .character-option {
+            background: #2a2a4a;
+            border: 2px solid #4a4a6a;
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .character-option:hover {
+            border-color: #6c63ff;
+            transform: translateY(-2px);
+        }
+
+        .character-option.selected {
+            border-color: #6c63ff;
+            background: rgba(108, 99, 255, 0.2);
+            box-shadow: 0 0 15px rgba(108, 99, 255, 0.3);
+        }
+
+        .character-option img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            margin-bottom: 5px;
+        }
+
+        .character-option .char-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+        }
+
+        .character-option .char-name {
+            color: #fff;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 26, 46, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        #loading-overlay.hidden {
+            display: none;
+        }
+
+        #loading-text {
+            color: #fff;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        #loading-bar-container {
+            width: 300px;
+            height: 20px;
+            background: #2a2a4a;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #loading-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(135deg, #6c63ff, #4a4aff);
+            transition: width 0.3s;
+        }
+
         #update-btn {
             background: linear-gradient(135deg, #4ecdc4, #44a08d);
             color: #fff;
@@ -592,6 +693,14 @@
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <div id="loading-text">Loading Assets...</div>
+        <div id="loading-bar-container">
+            <div id="loading-bar"></div>
+        </div>
+    </div>
+
     <div id="game-container">
         <div id="ui-overlay">
             <div id="connection-panel">
@@ -601,6 +710,37 @@
                     <label>YOUR PEER ID</label>
                     <span id="peer-id">Connecting...</span>
                     <button class="copy-btn" onclick="copyPeerId()">Copy</button>
+                </div>
+
+                <!-- Character Selection -->
+                <div class="character-select">
+                    <label>Choose Your Character</label>
+                    <div class="character-grid">
+                        <div class="character-option selected" data-character="Knight" onclick="selectCharacter(this)">
+                            <div class="char-icon">&#9876;</div>
+                            <div class="char-name">Knight</div>
+                        </div>
+                        <div class="character-option" data-character="Barbarian" onclick="selectCharacter(this)">
+                            <div class="char-icon">&#9935;</div>
+                            <div class="char-name">Barbarian</div>
+                        </div>
+                        <div class="character-option" data-character="Mage" onclick="selectCharacter(this)">
+                            <div class="char-icon">&#9733;</div>
+                            <div class="char-name">Mage</div>
+                        </div>
+                        <div class="character-option" data-character="Ranger" onclick="selectCharacter(this)">
+                            <div class="char-icon">&#127993;</div>
+                            <div class="char-name">Ranger</div>
+                        </div>
+                        <div class="character-option" data-character="Rogue" onclick="selectCharacter(this)">
+                            <div class="char-icon">&#128481;</div>
+                            <div class="char-name">Rogue</div>
+                        </div>
+                        <div class="character-option" data-character="Rogue_Hooded" onclick="selectCharacter(this)">
+                            <div class="char-icon">&#129399;</div>
+                            <div class="char-name">Shadow</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="input-group">
@@ -692,11 +832,12 @@
     </div>
 
     <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.158.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
     <script>
         // Game Version & Update Config
-        const GAME_VERSION = "1.2.1";
+        const GAME_VERSION = "1.3.0";
         const GITHUB_USER = "mslanden";
         const GITHUB_REPO = "game";
         const VERSION_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/version.json`;
@@ -709,22 +850,115 @@
             peer: null,
             connections: [],
             isHost: false,
-            gameStarted: false
+            gameStarted: false,
+            selectedCharacter: 'Knight'
         };
 
         // Three.js variables
         let scene, camera, renderer, clock;
         let ground, obstacles = [];
 
+        // Asset Management
+        const assetLoader = {
+            models: {},
+            animations: {},
+            weapons: {},
+            loader: null,
+            loaded: false,
+            totalAssets: 0,
+            loadedAssets: 0
+        };
+
+        const ASSET_PATH = 'assets/KayKit_Adventurers_2.0_FREE/';
+        const CHARACTER_MODELS = ['Knight', 'Barbarian', 'Mage', 'Ranger', 'Rogue', 'Rogue_Hooded'];
+        const WEAPON_MODELS = ['sword_1handed', 'axe_1handed', 'staff', 'bow', 'dagger'];
+
+        // Character selection function
+        function selectCharacter(element) {
+            document.querySelectorAll('.character-option').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            gameState.selectedCharacter = element.dataset.character;
+        }
+
+        // Asset loading system
+        async function loadAssets() {
+            assetLoader.loader = new THREE.GLTFLoader();
+
+            const loadingBar = document.getElementById('loading-bar');
+            const loadingText = document.getElementById('loading-text');
+
+            // Calculate total assets
+            assetLoader.totalAssets = CHARACTER_MODELS.length + 2; // Characters + 2 animation files
+
+            loadingText.textContent = 'Loading character models...';
+
+            // Load character models
+            for (const charName of CHARACTER_MODELS) {
+                try {
+                    const gltf = await loadGLTF(`${ASSET_PATH}Characters/gltf/${charName}.glb`);
+                    assetLoader.models[charName] = gltf;
+                    assetLoader.loadedAssets++;
+                    updateLoadingProgress(loadingBar, loadingText, `Loading ${charName}...`);
+                } catch (error) {
+                    console.warn(`Could not load ${charName} model:`, error);
+                    assetLoader.loadedAssets++;
+                    updateLoadingProgress(loadingBar, loadingText, `Skipping ${charName}...`);
+                }
+            }
+
+            // Load animations
+            loadingText.textContent = 'Loading animations...';
+            try {
+                const generalAnims = await loadGLTF(`${ASSET_PATH}Animations/gltf/Rig_Medium/Rig_Medium_General.glb`);
+                assetLoader.animations.general = generalAnims;
+                assetLoader.loadedAssets++;
+                updateLoadingProgress(loadingBar, loadingText, 'Loading animations...');
+            } catch (error) {
+                console.warn('Could not load general animations:', error);
+                assetLoader.loadedAssets++;
+            }
+
+            try {
+                const movementAnims = await loadGLTF(`${ASSET_PATH}Animations/gltf/Rig_Medium/Rig_Medium_MovementBasic.glb`);
+                assetLoader.animations.movement = movementAnims;
+                assetLoader.loadedAssets++;
+                updateLoadingProgress(loadingBar, loadingText, 'Loading movement...');
+            } catch (error) {
+                console.warn('Could not load movement animations:', error);
+                assetLoader.loadedAssets++;
+            }
+
+            assetLoader.loaded = true;
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+
+        function loadGLTF(path) {
+            return new Promise((resolve, reject) => {
+                assetLoader.loader.load(
+                    path,
+                    (gltf) => resolve(gltf),
+                    undefined,
+                    (error) => reject(error)
+                );
+            });
+        }
+
+        function updateLoadingProgress(bar, text, message) {
+            const progress = (assetLoader.loadedAssets / assetLoader.totalAssets) * 100;
+            bar.style.width = `${progress}%`;
+            text.textContent = message;
+        }
+
         // Player class
         class Player {
-            constructor(id, isLocal = false, color = null) {
+            constructor(id, isLocal = false, color = null, characterType = 'Knight') {
                 this.id = id;
                 this.isLocal = isLocal;
+                this.characterType = characterType;
                 this.velocity = new THREE.Vector3();
                 this.position = new THREE.Vector3(
                     Math.random() * 20 - 10,
-                    1,
+                    0,
                     Math.random() * 20 - 10
                 );
                 this.rotation = { x: 0, y: 0 };
@@ -753,56 +987,165 @@
                 this.dashDuration = 0;
                 this.dashDirection = new THREE.Vector3();
 
-                // Create player mesh (body)
-                const bodyGeometry = new THREE.CapsuleGeometry(0.4, 1, 8, 16);
-                const bodyMaterial = new THREE.MeshStandardMaterial({
-                    color: color || (isLocal ? 0x4caf50 : this.getRandomColor()),
-                    roughness: 0.5,
-                    metalness: 0.3
-                });
-                this.mesh = new THREE.Mesh(bodyGeometry, bodyMaterial);
-                this.mesh.castShadow = true;
-                this.mesh.receiveShadow = true;
+                // Animation system
+                this.mixer = null;
+                this.animations = {};
+                this.currentAnimation = null;
 
-                // Create head
-                const headGeometry = new THREE.SphereGeometry(0.3, 16, 16);
-                const headMaterial = new THREE.MeshStandardMaterial({
-                    color: 0xffdbac,
-                    roughness: 0.6
-                });
-                this.head = new THREE.Mesh(headGeometry, headMaterial);
-                this.head.position.y = 0.9;
-                this.head.castShadow = true;
-                this.mesh.add(this.head);
+                // Create a container group for the player
+                this.mesh = new THREE.Group();
 
-                // Create eyes
-                const eyeGeometry = new THREE.SphereGeometry(0.06, 8, 8);
-                const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                // Try to use 3D model, fallback to procedural
+                const modelData = assetLoader.models[characterType];
+                if (modelData && modelData.scene) {
+                    // Clone the loaded model
+                    this.characterModel = modelData.scene.clone();
+                    this.characterModel.scale.set(0.7, 0.7, 0.7);
+                    this.characterModel.position.y = 0;
 
-                const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-                leftEye.position.set(-0.1, 0.05, 0.25);
-                this.head.add(leftEye);
+                    // Enable shadows on all meshes
+                    this.characterModel.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
 
-                const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-                rightEye.position.set(0.1, 0.05, 0.25);
-                this.head.add(rightEye);
+                    this.mesh.add(this.characterModel);
 
-                // Create weapons
+                    // Set up animation mixer
+                    this.mixer = new THREE.AnimationMixer(this.characterModel);
+
+                    // Load animations from the animation files
+                    this.setupAnimations();
+
+                    this.using3DModel = true;
+                } else {
+                    // Fallback: Create procedural player mesh (body)
+                    const bodyGeometry = new THREE.CapsuleGeometry(0.4, 1, 8, 16);
+                    const bodyMaterial = new THREE.MeshStandardMaterial({
+                        color: color || (isLocal ? 0x4caf50 : this.getRandomColor()),
+                        roughness: 0.5,
+                        metalness: 0.3
+                    });
+                    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+                    body.position.y = 1;
+                    body.castShadow = true;
+                    body.receiveShadow = true;
+                    this.mesh.add(body);
+
+                    // Create head
+                    const headGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+                    const headMaterial = new THREE.MeshStandardMaterial({
+                        color: 0xffdbac,
+                        roughness: 0.6
+                    });
+                    this.head = new THREE.Mesh(headGeometry, headMaterial);
+                    this.head.position.y = 1.9;
+                    this.head.castShadow = true;
+                    this.mesh.add(this.head);
+
+                    // Create eyes
+                    const eyeGeometry = new THREE.SphereGeometry(0.06, 8, 8);
+                    const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+
+                    const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+                    leftEye.position.set(-0.1, 0.05, 0.25);
+                    this.head.add(leftEye);
+
+                    const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+                    rightEye.position.set(0.1, 0.05, 0.25);
+                    this.head.add(rightEye);
+
+                    this.using3DModel = false;
+                }
+
+                // Create weapons (attached to hands or floating beside)
                 this.createWeapons();
 
                 // Name tag
                 this.nameTag = this.createNameTag(id.substring(0, 8));
-                this.nameTag.position.y = 1.8;
+                this.nameTag.position.y = this.using3DModel ? 2.2 : 2.5;
                 this.mesh.add(this.nameTag);
 
                 // Health bar above player
                 this.healthBar = this.createHealthBar();
-                this.healthBar.position.y = 2.1;
+                this.healthBar.position.y = this.using3DModel ? 2.5 : 2.8;
                 this.mesh.add(this.healthBar);
 
                 this.mesh.position.copy(this.position);
 
-                this.color = bodyMaterial.color.getHex();
+                // Store color for reference
+                this.color = color || (isLocal ? 0x4caf50 : this.getRandomColor());
+            }
+
+            setupAnimations() {
+                // Load animations from the animation files
+                if (assetLoader.animations.movement && assetLoader.animations.movement.animations) {
+                    assetLoader.animations.movement.animations.forEach(clip => {
+                        const action = this.mixer.clipAction(clip);
+                        this.animations[clip.name.toLowerCase()] = action;
+                    });
+                }
+
+                if (assetLoader.animations.general && assetLoader.animations.general.animations) {
+                    assetLoader.animations.general.animations.forEach(clip => {
+                        const action = this.mixer.clipAction(clip);
+                        this.animations[clip.name.toLowerCase()] = action;
+                    });
+                }
+
+                // Try to play idle animation
+                this.playAnimation('idle');
+            }
+
+            playAnimation(name, options = {}) {
+                const animName = name.toLowerCase();
+                const action = this.animations[animName];
+
+                if (!action) {
+                    // Try common variations
+                    const variations = [
+                        animName,
+                        `${animName}_a`,
+                        `idle`,
+                        `idle_a`
+                    ];
+                    for (const varName of variations) {
+                        if (this.animations[varName]) {
+                            this.playAnimationAction(this.animations[varName], options);
+                            return;
+                        }
+                    }
+                    return;
+                }
+
+                this.playAnimationAction(action, options);
+            }
+
+            playAnimationAction(action, options = {}) {
+                if (this.currentAnimation === action) return;
+
+                if (this.currentAnimation) {
+                    this.currentAnimation.fadeOut(0.2);
+                }
+
+                action.reset();
+                action.fadeIn(0.2);
+                action.play();
+
+                if (options.loop === false) {
+                    action.setLoop(THREE.LoopOnce);
+                    action.clampWhenFinished = true;
+                }
+
+                this.currentAnimation = action;
+            }
+
+            updateAnimation(delta) {
+                if (this.mixer) {
+                    this.mixer.update(delta);
+                }
             }
 
             createHealthBar() {
@@ -1023,7 +1366,12 @@
                 sight.position.set(0, 0.08, -0.05);
                 gunGroup.add(sight);
 
-                gunGroup.position.set(0.4, 0.2, 0.3);
+                // Position based on model type
+                if (this.using3DModel) {
+                    gunGroup.position.set(0.35, 1.0, 0.3);
+                } else {
+                    gunGroup.position.set(0.4, 0.2, 0.3);
+                }
                 gunGroup.rotation.y = 0.1;
                 this.gun = gunGroup;
                 this.mesh.add(this.gun);
@@ -1082,7 +1430,12 @@
                 pommel.position.z = -0.25;
                 swordGroup.add(pommel);
 
-                swordGroup.position.set(0.4, 0.2, 0.3);
+                // Position based on model type
+                if (this.using3DModel) {
+                    swordGroup.position.set(0.35, 1.0, 0.3);
+                } else {
+                    swordGroup.position.set(0.4, 0.2, 0.3);
+                }
                 swordGroup.rotation.x = 0.2;
                 this.sword = swordGroup;
                 this.sword.visible = false;
@@ -1318,9 +1671,10 @@
                 this.position.y += this.velocity.y * delta;
                 this.position.z += this.velocity.z * delta;
 
-                // Ground collision
-                if (this.position.y <= 1) {
-                    this.position.y = 1;
+                // Ground collision (adjust for 3D models that are at y=0)
+                const groundLevel = this.using3DModel ? 0 : 1;
+                if (this.position.y <= groundLevel) {
+                    this.position.y = groundLevel;
                     this.velocity.y = 0;
                     this.isGrounded = true;
                     this.jumpCount = 0; // Reset double jump
@@ -1342,6 +1696,26 @@
                 // Update mesh
                 this.mesh.position.copy(this.position);
                 this.mesh.rotation.y = this.rotation.y;
+
+                // Update animation based on state
+                if (this.using3DModel && this.mixer) {
+                    const isMoving = Math.abs(this.velocity.x) > 0.5 || Math.abs(this.velocity.z) > 0.5;
+                    const isInAir = !this.isGrounded;
+
+                    if (isInAir) {
+                        this.playAnimation('jump');
+                    } else if (this.isDashing) {
+                        this.playAnimation('run');
+                    } else if (isMoving) {
+                        if (this.isSprinting) {
+                            this.playAnimation('run');
+                        } else {
+                            this.playAnimation('walk');
+                        }
+                    } else {
+                        this.playAnimation('idle');
+                    }
+                }
             }
 
             checkCollisions() {
@@ -1383,7 +1757,8 @@
                     y: this.position.y,
                     z: this.position.z,
                     ry: this.rotation.y,
-                    color: this.color
+                    color: this.color,
+                    characterType: this.characterType
                 };
             }
         }
@@ -1862,7 +2237,7 @@
                 case 'init':
                     // New player joined, create their avatar
                     if (!gameState.players.has(data.player.id)) {
-                        const player = new Player(data.player.id, false, data.player.color);
+                        const player = new Player(data.player.id, false, data.player.color, data.player.characterType || 'Knight');
                         player.updateFromNetwork(data.player);
                         gameState.players.set(data.player.id, player);
                         scene.add(player.mesh);
@@ -1877,7 +2252,7 @@
                         player.updateFromNetwork(data.player);
                     } else {
                         // Player not found, request init
-                        const newPlayer = new Player(data.player.id, false, data.player.color);
+                        const newPlayer = new Player(data.player.id, false, data.player.color, data.player.characterType || 'Knight');
                         newPlayer.updateFromNetwork(data.player);
                         gameState.players.set(data.player.id, newPlayer);
                         scene.add(newPlayer.mesh);
@@ -1887,7 +2262,7 @@
 
                 case 'playerJoin':
                     if (!gameState.players.has(data.player.id)) {
-                        const joinedPlayer = new Player(data.player.id, false, data.player.color);
+                        const joinedPlayer = new Player(data.player.id, false, data.player.color, data.player.characterType || 'Knight');
                         joinedPlayer.updateFromNetwork(data.player);
                         gameState.players.set(data.player.id, joinedPlayer);
                         scene.add(joinedPlayer.mesh);
@@ -1983,8 +2358,8 @@
         function startGame() {
             gameState.gameStarted = true;
 
-            // Create local player
-            gameState.localPlayer = new Player(gameState.peer.id, true);
+            // Create local player with selected character
+            gameState.localPlayer = new Player(gameState.peer.id, true, null, gameState.selectedCharacter);
             gameState.players.set(gameState.peer.id, gameState.localPlayer);
             scene.add(gameState.localPlayer.mesh);
 
@@ -2162,6 +2537,11 @@
                     createDashTrail(gameState.localPlayer.position.clone(), gameState.localPlayer.color);
                 }
             }
+
+            // Update all player animations
+            gameState.players.forEach(player => {
+                player.updateAnimation(delta);
+            });
 
             // Update camera
             updateCamera();
@@ -2459,9 +2839,12 @@
         }
 
         // Initialize everything
-        function init() {
+        async function init() {
             // Display current version
             document.getElementById('current-version').textContent = GAME_VERSION;
+
+            // Load 3D assets first
+            await loadAssets();
 
             initScene();
             initInput();
