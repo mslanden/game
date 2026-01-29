@@ -1139,27 +1139,37 @@
             }
 
             playAnimation(name, options = {}) {
-                const animName = name.toLowerCase();
-                const action = this.animations[animName];
+                // Map common names to KayKit animation names
+                const animationMap = {
+                    'idle': ['idle_a', 'idle_b'],
+                    'walk': ['walking_a', 'walking_b', 'walking_c'],
+                    'run': ['running_a', 'running_b'],
+                    'jump': ['jump_full_short', 'jump_start', 'jump_idle'],
+                    'death': ['death_a', 'death_b'],
+                    'hit': ['hit_a', 'hit_b']
+                };
 
-                if (!action) {
-                    // Try common variations
-                    const variations = [
-                        animName,
-                        `${animName}_a`,
-                        `idle`,
-                        `idle_a`
-                    ];
-                    for (const varName of variations) {
-                        if (this.animations[varName]) {
-                            this.playAnimationAction(this.animations[varName], options);
-                            return;
-                        }
-                    }
+                const animName = name.toLowerCase();
+
+                // Check direct match first
+                if (this.animations[animName]) {
+                    this.playAnimationAction(this.animations[animName], options);
                     return;
                 }
 
-                this.playAnimationAction(action, options);
+                // Check mapped variations
+                const variations = animationMap[animName] || [`${animName}_a`, `${animName}_b`];
+                for (const varName of variations) {
+                    if (this.animations[varName]) {
+                        this.playAnimationAction(this.animations[varName], options);
+                        return;
+                    }
+                }
+
+                // Fallback to idle
+                if (this.animations['idle_a']) {
+                    this.playAnimationAction(this.animations['idle_a'], options);
+                }
             }
 
             playAnimationAction(action, options = {}) {
