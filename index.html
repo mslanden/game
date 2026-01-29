@@ -332,6 +332,191 @@
             display: none;
         }
 
+        /* Health Bar HUD */
+        #health-bar-container {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            pointer-events: none;
+        }
+
+        #health-bar-bg {
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            border: 2px solid #444;
+            overflow: hidden;
+        }
+
+        #health-bar-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #ff6b6b);
+            transition: width 0.2s ease;
+        }
+
+        #health-text {
+            text-align: center;
+            color: #fff;
+            font-size: 12px;
+            margin-top: 5px;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        #health-bar-container.hidden {
+            display: none;
+        }
+
+        /* Scoreboard */
+        #scoreboard {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(26, 26, 46, 0.95);
+            border: 2px solid #4a4a6a;
+            border-radius: 15px;
+            padding: 20px;
+            min-width: 400px;
+            pointer-events: none;
+            display: none;
+            z-index: 200;
+        }
+
+        #scoreboard.visible {
+            display: block;
+        }
+
+        #scoreboard h2 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        #scoreboard table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #scoreboard th, #scoreboard td {
+            padding: 8px 15px;
+            text-align: left;
+            color: #fff;
+        }
+
+        #scoreboard th {
+            border-bottom: 2px solid #4a4a6a;
+            color: #888;
+            font-size: 12px;
+        }
+
+        #scoreboard tr.you {
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        #scoreboard .kills { color: #4caf50; }
+        #scoreboard .deaths { color: #ff6b6b; }
+
+        /* Damage overlay */
+        #damage-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(255, 0, 0, 0.4) 100%);
+            opacity: 0;
+            transition: opacity 0.1s ease;
+            z-index: 50;
+        }
+
+        /* Hit marker */
+        #hit-marker {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            opacity: 0;
+            z-index: 101;
+            font-size: 30px;
+            color: #ff4444;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        /* Dash indicator */
+        #dash-indicator {
+            position: absolute;
+            bottom: 110px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #4ecdc4;
+            font-size: 12px;
+            pointer-events: none;
+        }
+
+        #dash-indicator.hidden {
+            display: none;
+        }
+
+        #dash-cooldown-bar {
+            width: 100px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin-top: 5px;
+        }
+
+        #dash-cooldown-fill {
+            height: 100%;
+            background: #4ecdc4;
+            border-radius: 2px;
+            width: 100%;
+            transition: width 0.1s linear;
+        }
+
+        /* Death screen */
+        #death-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 150;
+            pointer-events: none;
+        }
+
+        #death-screen.visible {
+            display: flex;
+        }
+
+        #death-screen h1 {
+            color: #ff4444;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        #death-screen p {
+            color: #fff;
+            font-size: 18px;
+        }
+
+        #respawn-timer {
+            color: #4ecdc4;
+            font-size: 24px;
+            margin-top: 10px;
+        }
+
         .copy-btn {
             background: #4a4a6a;
             border: none;
@@ -447,10 +632,11 @@
             <div id="controls-help" class="hidden">
                 <span><b>WASD</b> - Move</span>
                 <span><b>SHIFT</b> - Sprint</span>
-                <span><b>SPACE</b> - Jump (Double Jump!)</span>
-                <span><b>Mouse</b> - Look around</span>
+                <span><b>SPACE</b> - Double Jump</span>
+                <span><b>E</b> - Dash</span>
                 <span><b>Left Click</b> - Attack</span>
-                <span><b>Q</b> - Switch Weapon (Gun/Sword)</span>
+                <span><b>Q</b> - Switch Weapon</span>
+                <span><b>TAB</b> - Scoreboard</span>
             </div>
 
             <canvas id="minimap" class="hidden"></canvas>
@@ -464,6 +650,44 @@
                 <div>Current Weapon</div>
                 <div class="weapon-name" id="current-weapon-name">Gun</div>
             </div>
+
+            <div id="health-bar-container" class="hidden">
+                <div id="health-bar-bg">
+                    <div id="health-bar-fill"></div>
+                </div>
+                <div id="health-text">100 / 100</div>
+            </div>
+
+            <div id="dash-indicator" class="hidden">
+                <span>DASH [SHIFT]</span>
+                <div id="dash-cooldown-bar">
+                    <div id="dash-cooldown-fill"></div>
+                </div>
+            </div>
+
+            <div id="damage-overlay"></div>
+            <div id="hit-marker">X</div>
+
+            <div id="scoreboard">
+                <h2>SCOREBOARD</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Kills</th>
+                            <th>Deaths</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scoreboard-body"></tbody>
+                </table>
+                <p style="text-align: center; color: #666; margin-top: 15px; font-size: 11px;">Hold TAB to view</p>
+            </div>
+
+            <div id="death-screen">
+                <h1>YOU DIED</h1>
+                <p>Killed by <span id="killer-name">enemy</span></p>
+                <div id="respawn-timer">Respawning in 3...</div>
+            </div>
         </div>
     </div>
 
@@ -472,7 +696,7 @@
 
     <script>
         // Game Version & Update Config
-        const GAME_VERSION = "1.1.1";
+        const GAME_VERSION = "1.2.0";
         const GITHUB_USER = "mslanden";
         const GITHUB_REPO = "game";
         const VERSION_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/version.json`;
@@ -511,6 +735,23 @@
                 this.currentWeapon = 'gun'; // 'gun' or 'sword'
                 this.isAttacking = false;
                 this.attackCooldown = 0;
+
+                // Health system
+                this.maxHealth = 100;
+                this.health = this.maxHealth;
+                this.isDead = false;
+                this.respawnTime = 3;
+
+                // Combat stats
+                this.kills = 0;
+                this.deaths = 0;
+
+                // Dash system
+                this.dashCooldown = 0;
+                this.maxDashCooldown = 2;
+                this.isDashing = false;
+                this.dashDuration = 0;
+                this.dashDirection = new THREE.Vector3();
 
                 // Create player mesh (body)
                 const bodyGeometry = new THREE.CapsuleGeometry(0.4, 1, 8, 16);
@@ -554,9 +795,166 @@
                 this.nameTag.position.y = 1.8;
                 this.mesh.add(this.nameTag);
 
+                // Health bar above player
+                this.healthBar = this.createHealthBar();
+                this.healthBar.position.y = 2.1;
+                this.mesh.add(this.healthBar);
+
                 this.mesh.position.copy(this.position);
 
                 this.color = bodyMaterial.color.getHex();
+            }
+
+            createHealthBar() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 128;
+                canvas.height = 16;
+                this.healthBarCtx = canvas;
+
+                const texture = new THREE.CanvasTexture(canvas);
+                const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+                const sprite = new THREE.Sprite(material);
+                sprite.scale.set(1.5, 0.2, 1);
+
+                this.healthBarTexture = texture;
+                this.updateHealthBar();
+
+                return sprite;
+            }
+
+            updateHealthBar() {
+                const canvas = this.healthBarCtx;
+                const ctx = canvas.getContext('2d');
+                const healthPercent = this.health / this.maxHealth;
+
+                ctx.clearRect(0, 0, 128, 16);
+
+                // Background
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, 128, 16);
+
+                // Health fill
+                const gradient = ctx.createLinearGradient(0, 0, 128 * healthPercent, 0);
+                if (healthPercent > 0.5) {
+                    gradient.addColorStop(0, '#4caf50');
+                    gradient.addColorStop(1, '#8bc34a');
+                } else if (healthPercent > 0.25) {
+                    gradient.addColorStop(0, '#ff9800');
+                    gradient.addColorStop(1, '#ffc107');
+                } else {
+                    gradient.addColorStop(0, '#f44336');
+                    gradient.addColorStop(1, '#ff5722');
+                }
+                ctx.fillStyle = gradient;
+                ctx.fillRect(2, 2, (128 - 4) * healthPercent, 12);
+
+                // Border
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(1, 1, 126, 14);
+
+                if (this.healthBarTexture) {
+                    this.healthBarTexture.needsUpdate = true;
+                }
+            }
+
+            takeDamage(amount, attackerId) {
+                if (this.isDead) return;
+
+                this.health = Math.max(0, this.health - amount);
+                this.updateHealthBar();
+
+                if (this.isLocal) {
+                    updateLocalHealthBar(this.health, this.maxHealth);
+                    showDamageOverlay();
+                    shakeScreen();
+                }
+
+                if (this.health <= 0) {
+                    this.die(attackerId);
+                }
+
+                // Network health update
+                if (this.isLocal) {
+                    broadcast({
+                        type: 'damage',
+                        targetId: this.id,
+                        health: this.health,
+                        attackerId: attackerId
+                    });
+                }
+            }
+
+            die(killerId) {
+                this.isDead = true;
+                this.deaths++;
+                this.mesh.visible = false;
+
+                // Give kill credit
+                if (killerId && killerId !== this.id) {
+                    const killer = gameState.players.get(killerId);
+                    if (killer) {
+                        killer.kills++;
+                    }
+                }
+
+                // Create death particles
+                createDeathParticles(this.position.clone());
+
+                if (this.isLocal) {
+                    showDeathScreen(killerId);
+                    setTimeout(() => this.respawn(), this.respawnTime * 1000);
+                }
+
+                // Network death
+                if (this.isLocal) {
+                    broadcast({
+                        type: 'death',
+                        playerId: this.id,
+                        killerId: killerId
+                    });
+                }
+            }
+
+            respawn() {
+                this.health = this.maxHealth;
+                this.isDead = false;
+                this.position.set(
+                    Math.random() * 40 - 20,
+                    1,
+                    Math.random() * 40 - 20
+                );
+                this.velocity.set(0, 0, 0);
+                this.mesh.visible = true;
+                this.updateHealthBar();
+
+                if (this.isLocal) {
+                    updateLocalHealthBar(this.health, this.maxHealth);
+                    hideDeathScreen();
+                }
+
+                // Network respawn
+                if (this.isLocal) {
+                    broadcast({
+                        type: 'respawn',
+                        playerId: this.id,
+                        x: this.position.x,
+                        y: this.position.y,
+                        z: this.position.z
+                    });
+                }
+            }
+
+            dash(direction) {
+                if (this.dashCooldown > 0 || this.isDead || direction.length() === 0) return;
+
+                this.isDashing = true;
+                this.dashDuration = 0.15;
+                this.dashDirection.copy(direction).normalize();
+                this.dashCooldown = this.maxDashCooldown;
+
+                // Create dash trail effect
+                createDashTrail(this.position.clone(), this.color);
             }
 
             getRandomColor() {
@@ -723,16 +1121,13 @@
             }
 
             shootGun(scene, camera) {
+                const GUN_DAMAGE = 20;
+
                 // Muzzle flash
                 this.muzzleFlash.material.opacity = 1;
                 setTimeout(() => {
                     if (this.muzzleFlash) this.muzzleFlash.material.opacity = 0;
                 }, 50);
-
-                // Create bullet tracer
-                const bulletGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 4);
-                const bulletMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-                const bullet = new THREE.Mesh(bulletGeom, bulletMat);
 
                 // Get shooting direction from camera
                 const direction = new THREE.Vector3();
@@ -743,13 +1138,51 @@
                 startPos.y += 0.7;
                 startPos.add(direction.clone().multiplyScalar(0.8));
 
+                // Raycast for hit detection
+                const raycaster = new THREE.Raycaster(startPos, direction, 0, 100);
+                let hitPlayer = null;
+                let hitDistance = Infinity;
+
+                gameState.players.forEach((player, id) => {
+                    if (id === this.id || player.isDead) return;
+
+                    // Create bounding box for player
+                    const playerBox = new THREE.Box3().setFromCenterAndSize(
+                        player.position,
+                        new THREE.Vector3(1, 2, 1)
+                    );
+
+                    const ray = new THREE.Ray(startPos, direction);
+                    const intersection = new THREE.Vector3();
+
+                    if (ray.intersectsBox(playerBox, intersection)) {
+                        const dist = startPos.distanceTo(intersection);
+                        if (dist < hitDistance) {
+                            hitDistance = dist;
+                            hitPlayer = player;
+                        }
+                    }
+                });
+
+                // Deal damage if hit
+                if (hitPlayer) {
+                    hitPlayer.takeDamage(GUN_DAMAGE, this.id);
+                    showHitMarker();
+                    createDamageNumber(hitPlayer.position.clone(), GUN_DAMAGE);
+                }
+
+                // Create bullet tracer
+                const bulletGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 4);
+                const bulletMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+                const bullet = new THREE.Mesh(bulletGeom, bulletMat);
+
                 bullet.position.copy(startPos);
                 bullet.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
                 scene.add(bullet);
 
                 // Animate bullet
                 const speed = 80;
-                const maxDistance = 100;
+                const maxDistance = hitPlayer ? hitDistance : 100;
                 let traveled = 0;
 
                 const animateBullet = () => {
@@ -765,6 +1198,32 @@
             }
 
             swingSword() {
+                const SWORD_DAMAGE = 35;
+                const SWORD_RANGE = 3;
+
+                // Check for players in melee range
+                gameState.players.forEach((player, id) => {
+                    if (id === this.id || player.isDead) return;
+
+                    const distance = this.position.distanceTo(player.position);
+                    if (distance <= SWORD_RANGE) {
+                        // Check if player is in front (within ~90 degree cone)
+                        const toPlayer = player.position.clone().sub(this.position).normalize();
+                        const forward = new THREE.Vector3(
+                            Math.sin(this.rotation.y),
+                            0,
+                            Math.cos(this.rotation.y)
+                        );
+                        const dot = toPlayer.dot(forward);
+
+                        if (dot > 0.3) { // In front
+                            player.takeDamage(SWORD_DAMAGE, this.id);
+                            showHitMarker();
+                            createDamageNumber(player.position.clone(), SWORD_DAMAGE);
+                        }
+                    }
+                });
+
                 // Sword swing animation
                 const startRotation = this.sword.rotation.x;
                 const swingAmount = -Math.PI / 2;
@@ -785,11 +1244,17 @@
             }
 
             update(delta, keys, cameraYaw) {
-                if (!this.isLocal) return;
+                if (!this.isLocal || this.isDead) return;
 
                 const moveSpeed = this.isSprinting ? 12 : 6;
+                const dashSpeed = 40;
                 const jumpForce = 8;
                 const gravity = 20;
+
+                // Update dash cooldown
+                if (this.dashCooldown > 0) {
+                    this.dashCooldown -= delta;
+                }
 
                 // Movement direction based on camera
                 const direction = new THREE.Vector3();
@@ -803,18 +1268,34 @@
                     direction.normalize();
                     direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYaw);
 
-                    this.velocity.x = direction.x * moveSpeed;
-                    this.velocity.z = direction.z * moveSpeed;
-
                     // Rotate player to face movement direction
                     this.rotation.y = Math.atan2(direction.x, direction.z);
+                }
+
+                // Dash (Shift + direction, not sprinting)
+                if (keys.dash && !this.isDashing && direction.length() > 0) {
+                    this.dash(direction);
+                }
+
+                // Handle dashing
+                if (this.isDashing) {
+                    this.dashDuration -= delta;
+                    this.velocity.x = this.dashDirection.x * dashSpeed;
+                    this.velocity.z = this.dashDirection.z * dashSpeed;
+
+                    if (this.dashDuration <= 0) {
+                        this.isDashing = false;
+                    }
+                } else if (direction.length() > 0) {
+                    this.velocity.x = direction.x * moveSpeed;
+                    this.velocity.z = direction.z * moveSpeed;
                 } else {
                     this.velocity.x *= 0.9;
                     this.velocity.z *= 0.9;
                 }
 
-                // Sprint
-                this.isSprinting = keys.sprint && direction.length() > 0;
+                // Sprint (only when not dashing)
+                this.isSprinting = keys.sprint && direction.length() > 0 && !this.isDashing;
 
                 // Jump (with double jump)
                 if (keys.jump && !keys.jumpHeld && this.jumpCount < this.maxJumps) {
@@ -1070,7 +1551,9 @@
             jumpHeld: false,
             sprint: false,
             attack: false,
-            switchWeapon: false
+            switchWeapon: false,
+            dash: false,
+            scoreboard: false
         };
 
         let cameraYaw = 0;
@@ -1095,6 +1578,16 @@
                             gameState.localPlayer.switchWeapon(newWeapon);
                         }
                         break;
+                    case 'ShiftRight':
+                    case 'KeyE':
+                        keys.dash = true;
+                        break;
+                    case 'Tab':
+                        e.preventDefault();
+                        keys.scoreboard = true;
+                        document.getElementById('scoreboard').classList.add('visible');
+                        updateScoreboard();
+                        break;
                 }
             });
 
@@ -1107,6 +1600,14 @@
                     case 'Space': keys.jump = false; break;
                     case 'ShiftLeft': keys.sprint = false; break;
                     case 'KeyQ': keys.switchWeapon = false; break;
+                    case 'ShiftRight':
+                    case 'KeyE':
+                        keys.dash = false;
+                        break;
+                    case 'Tab':
+                        keys.scoreboard = false;
+                        document.getElementById('scoreboard').classList.remove('visible');
+                        break;
                 }
             });
 
@@ -1243,6 +1744,41 @@
                 case 'playerLeave':
                     removePlayer(data.id);
                     break;
+
+                case 'damage':
+                    const damagedPlayer = gameState.players.get(data.targetId);
+                    if (damagedPlayer && !damagedPlayer.isLocal) {
+                        damagedPlayer.health = data.health;
+                        damagedPlayer.updateHealthBar();
+                    }
+                    break;
+
+                case 'death':
+                    const deadPlayer = gameState.players.get(data.playerId);
+                    if (deadPlayer && !deadPlayer.isLocal) {
+                        deadPlayer.isDead = true;
+                        deadPlayer.deaths++;
+                        deadPlayer.mesh.visible = false;
+                        createDeathParticles(deadPlayer.position.clone());
+
+                        // Give kill credit
+                        if (data.killerId) {
+                            const killer = gameState.players.get(data.killerId);
+                            if (killer) killer.kills++;
+                        }
+                    }
+                    break;
+
+                case 'respawn':
+                    const respawnedPlayer = gameState.players.get(data.playerId);
+                    if (respawnedPlayer && !respawnedPlayer.isLocal) {
+                        respawnedPlayer.health = respawnedPlayer.maxHealth;
+                        respawnedPlayer.isDead = false;
+                        respawnedPlayer.position.set(data.x, data.y, data.z);
+                        respawnedPlayer.mesh.visible = true;
+                        respawnedPlayer.updateHealthBar();
+                    }
+                    break;
             }
         }
 
@@ -1306,6 +1842,11 @@
             document.getElementById('disconnect-btn').classList.remove('hidden');
             document.getElementById('crosshair').classList.remove('hidden');
             document.getElementById('weapon-indicator').classList.remove('hidden');
+            document.getElementById('health-bar-container').classList.remove('hidden');
+            document.getElementById('dash-indicator').classList.remove('hidden');
+
+            // Initialize health bar
+            updateLocalHealthBar(gameState.localPlayer.health, gameState.localPlayer.maxHealth);
 
             updatePlayerList();
 
@@ -1337,6 +1878,10 @@
             document.getElementById('disconnect-btn').classList.add('hidden');
             document.getElementById('crosshair').classList.add('hidden');
             document.getElementById('weapon-indicator').classList.add('hidden');
+            document.getElementById('health-bar-container').classList.add('hidden');
+            document.getElementById('dash-indicator').classList.add('hidden');
+            document.getElementById('death-screen').classList.remove('visible');
+            document.getElementById('scoreboard').classList.remove('visible');
 
             // Exit pointer lock
             if (document.pointerLockElement) {
@@ -1454,6 +1999,14 @@
                 // Update weapon indicator
                 const weaponName = gameState.localPlayer.currentWeapon === 'gun' ? 'Gun' : 'Sword';
                 document.getElementById('current-weapon-name').textContent = weaponName;
+
+                // Update dash indicator
+                updateDashIndicator();
+
+                // Create dash trail while dashing
+                if (gameState.localPlayer.isDashing) {
+                    createDashTrail(gameState.localPlayer.position.clone(), gameState.localPlayer.color);
+                }
             }
 
             // Update camera
@@ -1475,6 +2028,216 @@
 
             // Render
             renderer.render(scene, camera);
+        }
+
+        // Visual Effects & UI Functions
+        function updateLocalHealthBar(health, maxHealth) {
+            const fill = document.getElementById('health-bar-fill');
+            const text = document.getElementById('health-text');
+            const percent = (health / maxHealth) * 100;
+
+            fill.style.width = percent + '%';
+
+            if (percent > 50) {
+                fill.style.background = 'linear-gradient(90deg, #4caf50, #8bc34a)';
+            } else if (percent > 25) {
+                fill.style.background = 'linear-gradient(90deg, #ff9800, #ffc107)';
+            } else {
+                fill.style.background = 'linear-gradient(90deg, #f44336, #ff5722)';
+            }
+
+            text.textContent = Math.ceil(health) + ' / ' + maxHealth;
+        }
+
+        function showDamageOverlay() {
+            const overlay = document.getElementById('damage-overlay');
+            overlay.style.opacity = '1';
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+            }, 150);
+        }
+
+        function shakeScreen() {
+            const container = document.getElementById('game-container');
+            container.style.transform = 'translate(' + (Math.random() * 10 - 5) + 'px, ' + (Math.random() * 10 - 5) + 'px)';
+            setTimeout(() => {
+                container.style.transform = 'translate(' + (Math.random() * 6 - 3) + 'px, ' + (Math.random() * 6 - 3) + 'px)';
+            }, 50);
+            setTimeout(() => {
+                container.style.transform = '';
+            }, 100);
+        }
+
+        function showHitMarker() {
+            const marker = document.getElementById('hit-marker');
+            marker.style.opacity = '1';
+            marker.style.transform = 'translate(-50%, -50%) scale(1.2)';
+            setTimeout(() => {
+                marker.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 50);
+            setTimeout(() => {
+                marker.style.opacity = '0';
+            }, 150);
+        }
+
+        function createDamageNumber(position, damage) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#ff4444';
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('-' + damage, 64, 32);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(1.5, 0.75, 1);
+            sprite.position.copy(position);
+            sprite.position.y += 2;
+            scene.add(sprite);
+
+            // Animate floating up and fading
+            let life = 0;
+            const animate = () => {
+                life += 0.02;
+                sprite.position.y += 0.03;
+                sprite.material.opacity = 1 - life;
+
+                if (life < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    scene.remove(sprite);
+                }
+            };
+            animate();
+        }
+
+        function createDeathParticles(position) {
+            const particleCount = 30;
+            const particles = [];
+
+            for (let i = 0; i < particleCount; i++) {
+                const geometry = new THREE.SphereGeometry(0.1, 4, 4);
+                const material = new THREE.MeshBasicMaterial({
+                    color: Math.random() > 0.5 ? 0xff4444 : 0xff8800,
+                    transparent: true
+                });
+                const particle = new THREE.Mesh(geometry, material);
+                particle.position.copy(position);
+                particle.velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 10,
+                    Math.random() * 8 + 2,
+                    (Math.random() - 0.5) * 10
+                );
+                scene.add(particle);
+                particles.push(particle);
+            }
+
+            let life = 0;
+            const animate = () => {
+                life += 0.02;
+
+                particles.forEach(p => {
+                    p.position.add(p.velocity.clone().multiplyScalar(0.016));
+                    p.velocity.y -= 15 * 0.016;
+                    p.material.opacity = 1 - life;
+                    p.scale.setScalar(1 - life * 0.5);
+                });
+
+                if (life < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    particles.forEach(p => scene.remove(p));
+                }
+            };
+            animate();
+        }
+
+        function createDashTrail(position, color) {
+            const geometry = new THREE.SphereGeometry(0.3, 8, 8);
+            const material = new THREE.MeshBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: 0.6
+            });
+            const trail = new THREE.Mesh(geometry, material);
+            trail.position.copy(position);
+            scene.add(trail);
+
+            let life = 0;
+            const animate = () => {
+                life += 0.1;
+                trail.material.opacity = 0.6 * (1 - life);
+                trail.scale.setScalar(1 + life);
+
+                if (life < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    scene.remove(trail);
+                }
+            };
+            animate();
+        }
+
+        function showDeathScreen(killerId) {
+            const screen = document.getElementById('death-screen');
+            const killerName = document.getElementById('killer-name');
+            const timer = document.getElementById('respawn-timer');
+
+            const killer = gameState.players.get(killerId);
+            killerName.textContent = killer ? killerId.substring(0, 8) : 'the arena';
+
+            screen.classList.add('visible');
+
+            let countdown = 3;
+            timer.textContent = 'Respawning in ' + countdown + '...';
+
+            const interval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    timer.textContent = 'Respawning in ' + countdown + '...';
+                } else {
+                    timer.textContent = 'Respawning...';
+                    clearInterval(interval);
+                }
+            }, 1000);
+        }
+
+        function hideDeathScreen() {
+            document.getElementById('death-screen').classList.remove('visible');
+        }
+
+        function updateScoreboard() {
+            const tbody = document.getElementById('scoreboard-body');
+            tbody.innerHTML = '';
+
+            // Sort players by kills
+            const sortedPlayers = Array.from(gameState.players.values())
+                .sort((a, b) => b.kills - a.kills);
+
+            sortedPlayers.forEach(player => {
+                const tr = document.createElement('tr');
+                if (player.isLocal) tr.classList.add('you');
+
+                tr.innerHTML = `
+                    <td>${player.id.substring(0, 8)}${player.isLocal ? ' (You)' : ''}</td>
+                    <td class="kills">${player.kills}</td>
+                    <td class="deaths">${player.deaths}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateDashIndicator() {
+            if (!gameState.localPlayer) return;
+
+            const fill = document.getElementById('dash-cooldown-fill');
+            const cooldownPercent = 1 - (gameState.localPlayer.dashCooldown / gameState.localPlayer.maxDashCooldown);
+            fill.style.width = Math.min(100, cooldownPercent * 100) + '%';
         }
 
         // Update System
