@@ -1021,16 +1021,30 @@
                     this.characterModel.scale.set(0.8, 0.8, 0.8);
                     this.characterModel.position.y = 0;
 
-                    // Enable shadows on meshes (keep original textures)
+                    // Load and apply texture
+                    const textureLoader = new THREE.TextureLoader();
+                    const textureName = characterType.toLowerCase().replace('_hooded', '') + '_texture.png';
+                    const texturePath = `${ASSET_PATH}Characters/gltf/${textureName}`;
+
+                    const texture = textureLoader.load(texturePath);
+                    texture.flipY = false; // GLTF models typically need this
+                    texture.encoding = THREE.sRGBEncoding;
+
+                    // Apply texture and shadows to meshes
                     this.characterModel.traverse((child) => {
                         if (child.isMesh) {
                             child.castShadow = true;
                             child.receiveShadow = true;
+                            child.material = new THREE.MeshStandardMaterial({
+                                map: texture,
+                                roughness: 0.8,
+                                metalness: 0.2
+                            });
                         }
                     });
 
                     this.mesh.add(this.characterModel);
-                    console.log('Added 3D model:', characterType);
+                    console.log('Added 3D model:', characterType, 'with texture:', texturePath);
 
                     // Set up animation mixer
                     this.mixer = new THREE.AnimationMixer(this.characterModel);
