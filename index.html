@@ -930,6 +930,18 @@
                 assetLoader.loadedAssets++;
             }
 
+            // Load weapon models
+            loadingText.textContent = 'Loading weapons...';
+            for (const weaponName of WEAPON_MODELS) {
+                try {
+                    const gltf = await loadGLTF(`${ASSET_PATH}Assets/gltf/${weaponName}.gltf`);
+                    assetLoader.weapons[weaponName] = gltf;
+                    updateLoadingProgress(loadingBar, loadingText, `Loading ${weaponName}...`);
+                } catch (error) {
+                    console.warn(`Could not load ${weaponName}:`, error);
+                }
+            }
+
             assetLoader.loaded = true;
             document.getElementById('loading-overlay').classList.add('hidden');
         }
@@ -1044,7 +1056,6 @@
                     });
 
                     this.mesh.add(this.characterModel);
-                    console.log('Added 3D model:', characterType, 'with texture:', texturePath);
 
                     // Set up animation mixer
                     this.mixer = new THREE.AnimationMixer(this.characterModel);
@@ -1132,8 +1143,6 @@
                     });
                 }
 
-                console.log('Available animations:', animationNames);
-
                 // Try to play idle animation
                 this.playAnimation('idle');
             }
@@ -1153,7 +1162,7 @@
 
                 // Check direct match first
                 if (this.animations[animName]) {
-                    this.playAnimationAction(this.animations[animName], options, animName);
+                    this.playAnimationAction(this.animations[animName], options);
                     return;
                 }
 
@@ -1161,21 +1170,19 @@
                 const variations = animationMap[animName] || [`${animName}_a`, `${animName}_b`];
                 for (const varName of variations) {
                     if (this.animations[varName]) {
-                        this.playAnimationAction(this.animations[varName], options, varName);
+                        this.playAnimationAction(this.animations[varName], options);
                         return;
                     }
                 }
 
                 // Fallback to idle
                 if (this.animations['idle_a']) {
-                    this.playAnimationAction(this.animations['idle_a'], options, 'idle_a (fallback)');
+                    this.playAnimationAction(this.animations['idle_a'], options);
                 }
             }
 
-            playAnimationAction(action, options = {}, debugName = '') {
+            playAnimationAction(action, options = {}) {
                 if (this.currentAnimation === action) return;
-
-                console.log('Playing animation:', debugName);
 
                 if (this.currentAnimation) {
                     this.currentAnimation.fadeOut(0.2);
@@ -1427,68 +1434,69 @@
                 this.gun = gunGroup;
                 this.mesh.add(this.gun);
 
-                // Sword weapon
-                const swordGroup = new THREE.Group();
+                // Melee weapon (sword/axe/staff/dagger based on character)
+                const meleeGroup = new THREE.Group();
 
-                // Sword blade
-                const bladeGeometry = new THREE.BoxGeometry(0.06, 0.04, 1.0);
-                const bladeMaterial = new THREE.MeshStandardMaterial({
-                    color: 0xc0c0c0,
-                    metalness: 0.95,
-                    roughness: 0.1,
-                    emissive: 0x3366ff,
-                    emissiveIntensity: 0.1
-                });
-                const blade = new THREE.Mesh(bladeGeometry, bladeMaterial);
-                blade.position.z = 0.5;
-                swordGroup.add(blade);
+                // Map character types to weapons
+                const characterWeapons = {
+                    'Knight': 'sword_1handed',
+                    'Barbarian': 'axe_1handed',
+                    'Mage': 'staff',
+                    'Ranger': 'bow',
+                    'Rogue': 'dagger',
+                    'Rogue_Hooded': 'dagger'
+                };
 
-                // Blade edge glow
-                const edgeGlow = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.01, 0.06, 0.95),
-                    new THREE.MeshStandardMaterial({
-                        color: 0x66aaff,
-                        emissive: 0x4488ff,
-                        emissiveIntensity: 0.8,
-                        transparent: true,
-                        opacity: 0.7
-                    })
-                );
-                edgeGlow.position.z = 0.5;
-                swordGroup.add(edgeGlow);
+                const weaponName = characterWeapons[this.characterType] || 'sword_1handed';
+                const weaponData = assetLoader.weapons[weaponName];
 
-                // Sword handle
-                const handleGeom = new THREE.CylinderGeometry(0.03, 0.035, 0.25, 8);
-                const handleMat = new THREE.MeshStandardMaterial({ color: 0x4a3020, roughness: 0.9 });
-                const handle = new THREE.Mesh(handleGeom, handleMat);
-                handle.rotation.x = Math.PI / 2;
-                handle.position.z = -0.12;
-                swordGroup.add(handle);
+                if (weaponData && weaponData.scene && this.using3DModel) {
+                    // Use loaded 3D weapon
+                    const weaponModel = weaponData.scene.clone();
+                    weaponModel.scale.set(0.5, 0.5, 0.5);
 
-                // Sword guard (crossguard)
-                const guard = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.25, 0.04, 0.06),
-                    new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.3 })
-                );
-                guard.position.z = 0;
-                swordGroup.add(guard);
+                    // Adjust rotation based on weapon type
+                    if (weaponName === 'staff') {
+                        weaponModel.rotation.x = Math.PI / 2;
+                    } else if (weaponName === 'bow') {
+                        weaponModel.rotation.z = Math.PI / 2;
+                    }
 
-                // Pommel
-                const pommel = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.04, 8, 8),
-                    new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.3 })
-                );
-                pommel.position.z = -0.25;
-                swordGroup.add(pommel);
+                    weaponModel.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                        }
+                    });
+                    meleeGroup.add(weaponModel);
+                } else {
+                    // Fallback procedural sword
+                    const bladeGeometry = new THREE.BoxGeometry(0.06, 0.04, 1.0);
+                    const bladeMaterial = new THREE.MeshStandardMaterial({
+                        color: 0xc0c0c0,
+                        metalness: 0.95,
+                        roughness: 0.1
+                    });
+                    const blade = new THREE.Mesh(bladeGeometry, bladeMaterial);
+                    blade.position.z = 0.5;
+                    meleeGroup.add(blade);
+
+                    const handleGeom = new THREE.CylinderGeometry(0.03, 0.035, 0.25, 8);
+                    const handleMat = new THREE.MeshStandardMaterial({ color: 0x4a3020 });
+                    const handle = new THREE.Mesh(handleGeom, handleMat);
+                    handle.rotation.x = Math.PI / 2;
+                    handle.position.z = -0.12;
+                    meleeGroup.add(handle);
+                }
 
                 // Position based on model type
                 if (this.using3DModel) {
-                    swordGroup.position.set(0.35, 1.0, 0.3);
+                    meleeGroup.position.set(0.3, 0.8, 0.2);
+                    meleeGroup.rotation.set(0, 0, -Math.PI / 6);
                 } else {
-                    swordGroup.position.set(0.4, 0.2, 0.3);
+                    meleeGroup.position.set(0.4, 0.2, 0.3);
+                    meleeGroup.rotation.x = 0.2;
                 }
-                swordGroup.rotation.x = 0.2;
-                this.sword = swordGroup;
+                this.sword = meleeGroup;
                 this.sword.visible = false;
                 this.mesh.add(this.sword);
 
@@ -1762,11 +1770,6 @@
                         targetAnim = this.isSprinting ? 'run' : 'walk';
                     }
 
-                    // Only log when animation changes
-                    if (this.lastAnimState !== targetAnim) {
-                        console.log('Animation state:', targetAnim, 'isMoving:', isMoving, 'velocity:', this.velocity.x.toFixed(2), this.velocity.z.toFixed(2));
-                        this.lastAnimState = targetAnim;
-                    }
                     this.playAnimation(targetAnim);
                 }
             }
