@@ -472,7 +472,7 @@
 
     <script>
         // Game Version & Update Config
-        const GAME_VERSION = "1.1.0";
+        const GAME_VERSION = "1.1.1";
         const GITHUB_USER = "mslanden";
         const GITHUB_REPO = "game";
         const VERSION_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/version.json`;
@@ -1514,7 +1514,11 @@
                     btn.classList.add('has-update');
                     btn.disabled = false;
                     btn.onclick = () => {
-                        window.location.href = GAME_URL;
+                        btn.textContent = 'Redirecting...';
+                        btn.disabled = true;
+                        setTimeout(() => {
+                            window.location.href = GAME_URL;
+                        }, 500);
                     };
                     status.textContent = `New version available! (${data.changelog || 'Bug fixes and improvements'})`;
                     status.className = 'update-available';
