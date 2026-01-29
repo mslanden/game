@@ -1020,16 +1020,27 @@
                     this.characterModel.position.y = 0;
 
                     // Enable shadows on all meshes and fix materials
+                    const characterColors = {
+                        'Knight': 0x4169E1,
+                        'Barbarian': 0x8B4513,
+                        'Mage': 0x9932CC,
+                        'Ranger': 0x228B22,
+                        'Rogue': 0x2F4F4F,
+                        'Rogue_Hooded': 0x1a1a2e
+                    };
+                    const charColor = characterColors[characterType] || 0x888888;
+
                     this.characterModel.traverse((child) => {
                         if (child.isMesh) {
                             child.castShadow = true;
                             child.receiveShadow = true;
                             child.frustumCulled = false;
-                            // Ensure materials render properly
-                            if (child.material) {
-                                child.material.side = THREE.DoubleSide;
-                                child.material.needsUpdate = true;
-                            }
+                            // Apply a visible material since textures may not load
+                            child.material = new THREE.MeshStandardMaterial({
+                                color: charColor,
+                                roughness: 0.7,
+                                metalness: 0.3
+                            });
                         }
                     });
 
