@@ -1153,7 +1153,7 @@
 
                 // Check direct match first
                 if (this.animations[animName]) {
-                    this.playAnimationAction(this.animations[animName], options);
+                    this.playAnimationAction(this.animations[animName], options, animName);
                     return;
                 }
 
@@ -1161,19 +1161,21 @@
                 const variations = animationMap[animName] || [`${animName}_a`, `${animName}_b`];
                 for (const varName of variations) {
                     if (this.animations[varName]) {
-                        this.playAnimationAction(this.animations[varName], options);
+                        this.playAnimationAction(this.animations[varName], options, varName);
                         return;
                     }
                 }
 
                 // Fallback to idle
                 if (this.animations['idle_a']) {
-                    this.playAnimationAction(this.animations['idle_a'], options);
+                    this.playAnimationAction(this.animations['idle_a'], options, 'idle_a (fallback)');
                 }
             }
 
-            playAnimationAction(action, options = {}) {
+            playAnimationAction(action, options = {}, debugName = '') {
                 if (this.currentAnimation === action) return;
+
+                console.log('Playing animation:', debugName);
 
                 if (this.currentAnimation) {
                     this.currentAnimation.fadeOut(0.2);
@@ -1751,19 +1753,21 @@
                     const isMoving = Math.abs(this.velocity.x) > 0.5 || Math.abs(this.velocity.z) > 0.5;
                     const isInAir = !this.isGrounded;
 
+                    let targetAnim = 'idle';
                     if (isInAir) {
-                        this.playAnimation('jump');
+                        targetAnim = 'jump';
                     } else if (this.isDashing) {
-                        this.playAnimation('run');
+                        targetAnim = 'run';
                     } else if (isMoving) {
-                        if (this.isSprinting) {
-                            this.playAnimation('run');
-                        } else {
-                            this.playAnimation('walk');
-                        }
-                    } else {
-                        this.playAnimation('idle');
+                        targetAnim = this.isSprinting ? 'run' : 'walk';
                     }
+
+                    // Only log when animation changes
+                    if (this.lastAnimState !== targetAnim) {
+                        console.log('Animation state:', targetAnim, 'isMoving:', isMoving, 'velocity:', this.velocity.x.toFixed(2), this.velocity.z.toFixed(2));
+                        this.lastAnimState = targetAnim;
+                    }
+                    this.playAnimation(targetAnim);
                 }
             }
 
