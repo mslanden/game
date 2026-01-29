@@ -1016,18 +1016,25 @@
                 if (modelData && modelData.scene) {
                     // Clone the loaded model
                     this.characterModel = modelData.scene.clone();
-                    this.characterModel.scale.set(0.7, 0.7, 0.7);
+                    this.characterModel.scale.set(1.5, 1.5, 1.5); // Larger scale
                     this.characterModel.position.y = 0;
 
-                    // Enable shadows on all meshes
+                    // Enable shadows on all meshes and fix materials
                     this.characterModel.traverse((child) => {
                         if (child.isMesh) {
                             child.castShadow = true;
                             child.receiveShadow = true;
+                            child.frustumCulled = false;
+                            // Ensure materials render properly
+                            if (child.material) {
+                                child.material.side = THREE.DoubleSide;
+                                child.material.needsUpdate = true;
+                            }
                         }
                     });
 
                     this.mesh.add(this.characterModel);
+                    console.log('Added 3D model:', characterType);
 
                     // Set up animation mixer
                     this.mixer = new THREE.AnimationMixer(this.characterModel);
