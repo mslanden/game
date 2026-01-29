@@ -833,6 +833,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/utils/SkeletonUtils.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
     <script>
@@ -896,6 +897,7 @@
             for (const charName of CHARACTER_MODELS) {
                 try {
                     const gltf = await loadGLTF(`${ASSET_PATH}Characters/gltf/${charName}.glb`);
+                    gltf.scene.updateMatrixWorld(true); // Required for proper skeleton cloning
                     assetLoader.models[charName] = gltf;
                     assetLoader.loadedAssets++;
                     updateLoadingProgress(loadingBar, loadingText, `Loading ${charName}...`);
@@ -1014,8 +1016,8 @@
                 // Try to use 3D model, fallback to procedural
                 const modelData = assetLoader.models[characterType];
                 if (modelData && modelData.scene) {
-                    // Clone the loaded model
-                    this.characterModel = modelData.scene.clone();
+                    // Clone the loaded model using SkeletonUtils for skinned meshes
+                    this.characterModel = THREE.SkeletonUtils.clone(modelData.scene);
                     this.characterModel.scale.set(1.5, 1.5, 1.5); // Larger scale
                     this.characterModel.position.y = 0;
 
